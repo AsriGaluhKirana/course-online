@@ -1,0 +1,22 @@
+1. User Management
+- Register User
+- Update User
+
+2. Course Management
+- Create new course (including pre-requisite course, User and course relation is many-to-many)
+- Update course data
+- Get list users enrolled to course
+- Enroll to course (User can be enrolled max.5 course, user must completed pre-requisite course first)
+- Complete course
+- Dropout from course
+- Search source (Seacrh by name, description, and/or pre-requisite course)
+
+3. Reporting
+- Get top 5 course (most enrolled)
+- Get top 5 students (completed must course)
+
+==============================================================================================================
+
+Models (Pengguna, Course, Role, Kategori, [table junction : *pre-requisite*, *user-course-enrollment*])
+
+* Course (Algorith, Progamming Language, Data Structure, Database, Data Science)
