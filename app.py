@@ -40,6 +40,7 @@ class Course(db.Model):
     deskripsi = db.Column(db.String, nullable=False)
     kategori = db.Column(db.String, nullable=False)
     student = db.relationship('Coursedata', backref='course', lazy='dynamic')
+    
 
 # tabel course data
 class Coursedata(db.Model):
@@ -115,15 +116,33 @@ def enroll_course(id):
     print(user.id)
     if user.role == 'Student':
         add_enroll = Coursedata(user_id = user.id, course_id = id, status = "in progress")
-        
+             
         db.session.add(add_enroll)
         db.session.commit()
         return {"message": "Hore! Anda berhasil."}
 
 #Endpoint enroll complete
-# @app.route('/course/enroll/<id>', methods=['PUT'])
-# def complete_course(id):
+@app.route('/course/enroll/<id>', methods=['PUT'])
+def complete_course(id):
+    user = login()
+    data = request.get_json()
+    course = Coursedata.query.filter_by(user_id=id).first_or_404()
+    if user.role == 'Admin':
+        course.status = data.get("status")
+        
+        db.session.add(course)
+        db.session.commit()
+        return {"message": "Hore! Anda selesai."}
     
+#Endpoint delete from course
+@app.route('/course/enroll/<id>', methods=['DELETE'])
+def delete_enroll(id):
+    user = login()
+    data = Coursedata.query.filter_by(user_id=id).first_or_404()
+    if user.role == 'Admin':
+        db.session.add(data)
+        db.session.commit()
+    return {"message": "Hore! Data selesai dihapus."}
 
 if __name__ == '__main__':
     app.run(debug=True)
