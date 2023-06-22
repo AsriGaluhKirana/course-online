@@ -41,7 +41,7 @@ class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     Nama = db.Column(db.String, nullable=False)
     deskripsi = db.Column(db.String, nullable=False)
-    kategori = db.Column(db.Integer, db.ForeignKey("kategori.id"), nullable=False)
+    kategori = db.Column(db.String, nullable=False)
     student = db.relationship('Coursedata', backref='course', lazy='dynamic')
 
 # tabel course data
@@ -49,36 +49,18 @@ class Coursedata(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("pengguna.id"), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey("course.id"), nullable=False)
-    status_id = db.Column(db.Integer, db.ForeignKey("status.id"), nullable=False) 
-    
-#tabel status
-class Status(db.Model):
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    status = db.Column(db.String, nullable=False)
-    statuses = db.relationship('Coursedata', backref='status', lazy='dynamic')
-    
+    status = db.Column(db.String, nullable=False) 
+
 # tabel pre-requsite
 class Prequisite(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     course_id = db.Column(db.Integer, db.ForeignKey("course.id"))
     prequisite_id = db.Column(db.Integer, db.ForeignKey("course.id"))
 
-# #tabel kategori
-# class Kategori(db.Model):
-#     id = db.Column(db.Integer, primary_key=True, nullable=False)
-#     nama = db.Column(db.String, nullable=False)
-#     course = db.relationship('Course', backref='kategori', lazy='dynamic')
-    
-# #tabel role
-# class Role(db.Model):
-#     id = db.Column(db.Integer, primary_key=True, nullable=False)
-#     nama_role = db.Column(db.String, nullable=False)
-#     pengguna = db.relationship('Pengguna', backref='role', lazy='dynamic')
-
+if __name__ == '__main__':
+    app.run(debug=True)
 
 with app.app_context(): 
     db.create_all()
     db.session.commit()
     
-if __name__ == '__main__':
-    app.run(debug=True)
