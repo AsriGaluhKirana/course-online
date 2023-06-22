@@ -48,7 +48,7 @@ class Coursedata(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("pengguna.id"), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey("course.id"), nullable=False)
-    status = db.Column(db.String, nullable=False) 
+    status = db.Column(db.String, nullable=False)
 
 # tabel pre-requsite
 class Prequisite(db.Model):
@@ -56,7 +56,7 @@ class Prequisite(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey("course.id"))
     prequisite_id = db.Column(db.Integer, db.ForeignKey("course.id"))
 
-#endpoint 
+#endpoint REGISTRASI & UPDATE PENGGUNA
 @app.route('/user/regis', methods=['POST'])
 def create_newuser():
     data=request.get_json()
@@ -82,6 +82,35 @@ def create_updateuser(id):
     db.session.add(user)
     db.session.commit()
     return {"message": "Hore! Anda berhasil mengupdate data."}
+
+#ENDPOINT COURSE Add & Update
+@app.route('/course/add', methods=['POST'])
+def create_course():
+    data=request.get_json()
+    new_course = Course(
+        id = data.get('id'),
+        Nama = data.get('Nama'),
+        deskripsi = data.get('deskripsi'),
+        kategori = data.get('kategori')
+    )
+    db.session.add(new_course)
+    db.session.commit()
+    return {"message": "Hore! Anda berhasil menambahkan course."}
+
+@app.route('/course/update/<id>', methods=['PUT'])
+def update_course(id):
+    course = Course.query.filter_by(id=id).first_or_404()
+    data=request.get_json()
+    course.id = data.get('id'),
+    course.nama = data.get('nama'),
+    course.deskripsi = data.get('deskripsi'),
+    course.kategori = data.get('kategori')
+    
+    db.session.add(course)
+    db.session.commit()
+    return {"message": "Hore! Anda berhasil mengupdate data."}
+
+#
 
 if __name__ == '__main__':
     app.run(debug=True)
