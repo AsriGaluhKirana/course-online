@@ -158,18 +158,18 @@ def search_course(name):
     return jsonify(result)
 
 #Endpoint search course by deskripsi
-# @app.route('/search/course/<description>', methods=['GET'])
-# def search_course_description(description):
-#     courses = Course.query.filter(Course.deskripsi.ilike(f'%{description}%')).all()
+@app.route('/search/course/deskripsi/<description>', methods=['GET'])
+def search_course_description(description):
+    courses = Course.query.filter(Course.deskripsi.ilike(f'%{description}%')).all()
     
-#     if not courses:
-#         return jsonify({'message': 'No courses found'})
+    if not courses:
+        return jsonify({'message': 'No courses found'})
     
-#     result = []
-#     for course in courses:
-#         result.append({'id': course.id, 'nama': course.nama, 'deskripsi': course.deskripsi})
+    result = []
+    for course in courses:
+        result.append({'id': course.id, 'nama': course.nama, 'deskripsi': course.deskripsi})
     
-#     return jsonify(result)
+    return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True)
