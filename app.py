@@ -40,7 +40,6 @@ class Course(db.Model):
     deskripsi = db.Column(db.String, nullable=False)
     kategori = db.Column(db.String, nullable=False)
     student = db.relationship('Coursedata', backref='course', lazy='dynamic')
-    
 
 # tabel course data
 class Coursedata(db.Model):
@@ -143,6 +142,34 @@ def delete_enroll(id):
         db.session.add(data)
         db.session.commit()
     return {"message": "Hore! Data selesai dihapus."}
+
+#Endpoint search course by name
+@app.route('/search/course/<name>', methods=['GET'])
+def search_course(name):
+    courses = Course.query.filter(Course.nama.ilike(f'%{name}%')).all()
+    
+    if not courses:
+        return jsonify({'message': 'No courses found'})
+    
+    result = []
+    for course in courses:
+        result.append({'id': course.id, 'nama': course.nama, 'deskripsi': course.deskripsi})
+    
+    return jsonify(result)
+
+#Endpoint search course by deskripsi
+# @app.route('/search/course/<description>', methods=['GET'])
+# def search_course_description(description):
+#     courses = Course.query.filter(Course.deskripsi.ilike(f'%{description}%')).all()
+    
+#     if not courses:
+#         return jsonify({'message': 'No courses found'})
+    
+#     result = []
+#     for course in courses:
+#         result.append({'id': course.id, 'nama': course.nama, 'deskripsi': course.deskripsi})
+    
+#     return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True)
