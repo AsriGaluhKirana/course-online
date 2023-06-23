@@ -139,7 +139,7 @@ def delete_enroll(id):
     user = login()
     data = Coursedata.query.filter_by(user_id=id).first_or_404()
     if user.role == 'Admin':
-        db.session.add(data)
+        db.session.delete(data)
         db.session.commit()
     return {"message": "Hore! Data selesai dihapus."}
 
