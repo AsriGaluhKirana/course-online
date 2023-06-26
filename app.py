@@ -128,44 +128,67 @@ def update_course(id):
 def enroll_course(id):
     user = login()
     if user.role == 'Student':
+       
         enrollment_count = db.session.query(Coursedata).filter(Coursedata.user_id == user.id).filter(Coursedata.status.in_(['in progress', 'dropout'])).count()
 
         if enrollment_count >= 5:
             return {"message": "Enrollment gagal. Course yang boleh diambil adalah maksimal 5"}
 
-        prerequisite = db.session.query(Prequisite).filter(Prequisite.course_id == id).first()
-        
-        if prerequisite is None:
-            add_enroll = Coursedata(user_id=user.id, course_id=id, status='in progress')
-            db.session.add(add_enroll)
-            db.session.commit()
-            return {"message": "Success"}
+        get_course = db.session.query(Course).filter(Course.id == id).first()
+        if get_course is None :
+            return 'course not available!'
         else:
-            prerequisite_completed = db.session.query(Coursedata).filter(Coursedata.user_id == user.id).filter(Coursedata.course_id == prerequisite.course_id).filter(Coursedata.status == 'completed').first()
-
-            if prerequisite_completed:
-                add_enroll = Coursedata(user_id=user.id, course_id=id, status='in progress')
-                db.session.add(add_enroll)
-                db.session.commit()
-                return {"message": "Success"}
-            else:
-                return {"message": "Enrollment gagal. Belum lulus course prerequisite."}
+            if db.session.query(Prequisite).filter(Prequisite.course_id == id).first() != None:
+                preqid = db.session.query(Prequisite).filter(Prequisite.course_id == id).first().prequisite_id
+                preqcomp = db.session.query(Coursedata).filter(Coursedata.user_id == user.id).filter(Coursedata.course_id == preqid).first()
+                if preqcomp != None:
+                    if preqcomp.status == 'completed':
+                        add_enroll = Coursedata(user_id=user.id, course_id=id, status='in progress')
+                        db.session.add(add_enroll)
+                        db.session.commit()
+                        return 'success enroll'
+                    else :
+                        return 'fail enroll because not completed yet'
+                else:
+                    return 'Maaf gagal, kamu belum enroll sama sekali si prequisitenya!!'
+            else :
+                    add_enroll = Coursedata(user_id=user.id, course_id=id, status='in progress')
+                    db.session.add(add_enroll)
+                    db.session.commit()
+                    return 'success enroll'
+       
     else:
         return {"message": "Hanya boleh dilakukan oleh student."}
 
 
-#Endpoint enroll complete
-@app.route('/course/enroll/<id>', methods=['PUT'])
+#Endpoint enroll status complete or dropout
+@app.route('/course/status/<id>', methods=['PUT'])
 def complete_course(id):
     user = login()
+    # return user.id
     data = request.get_json()
-    course = Coursedata.query.filter_by(id=id).first_or_404()
-    if user.role == 'Admin':
+    course = Coursedata.query.filter_by(user_id=user.id).filter_by(course_id=id).first_or_404()
+    if user.role == 'Student':
         course.status = data.get("status")
         
         db.session.add(course)
         db.session.commit()
         return {"message": "Hore! Anda selesai."}
+
+#Endpoint Get list users enrolled to course
+@app.route('/course/list/<id>', methods=['GET'])
+def list_enrolled_users(id):
+    course = Coursedata.query.filter_by(id=id).all()
+    
+    response = [
+        {
+            "id" : c.id,
+            "user_id" : c.user_id,
+            "course_id" : c.course_id,
+            "status" : c.status
+        } for c in course
+    ]
+    return {"message": "success.", "data" : response}
 
 
 #Endpoint delete from course
@@ -207,6 +230,9 @@ def search_course_description(description):
         result.append({'id': course.id, 'nama': course.nama, 'deskripsi': course.deskripsi})
     
     return jsonify(result)
+
+
+
 
 
 if __name__ == '__main__':
