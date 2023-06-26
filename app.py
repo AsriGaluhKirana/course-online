@@ -7,13 +7,44 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI']='postgresql://postgres:1@localhost:5432/courseonline'
 db = SQLAlchemy(app)
 
-#table pengguna
+
+#table user
 class Pengguna(db.Model):
     id = db.Column(db.String, primary_key=True, nullable=False)
     nama = db.Column(db.String)
     password = db.Column(db.String, nullable=False)
     role = db.Column(db.String, nullable=False)
-    
+
+
+#tabel course
+class Course(db.Model):
+    id = db.Column(db.String, primary_key=True, nullable=False)
+    nama = db.Column(db.String, nullable=False)
+    deskripsi = db.Column(db.String, nullable=False)
+    kategori = db.Column(db.String, nullable=False)
+    student = db.relationship('Coursedata', backref='course', lazy='dynamic')
+
+
+# tabel course data
+class Coursedata(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.String, db.ForeignKey("pengguna.id"))
+    course_id = db.Column(db.String, db.ForeignKey("course.id"))
+    status = db.Column(db.String, nullable=False)
+
+
+# tabel pre-requsite
+class Prequisite(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    course_id = db.Column(db.String, db.ForeignKey("course.id"))
+    prequisite_id = db.Column(db.String, db.ForeignKey("course.id"))
+
+
+with app.app_context(): 
+    db.create_all()
+    db.session.commit()
+
+
 def login():
     username = request.authorization.get("username")
     password = request.authorization.get("password")
@@ -32,27 +63,7 @@ def login():
             return user
     else:
         return 'Password salah!'
-
-#tabel course
-class Course(db.Model):
-    id = db.Column(db.String, primary_key=True, nullable=False)
-    nama = db.Column(db.String, nullable=False)
-    deskripsi = db.Column(db.String, nullable=False)
-    kategori = db.Column(db.String, nullable=False)
-    student = db.relationship('Coursedata', backref='course', lazy='dynamic')
-
-# tabel course data
-class Coursedata(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.String, db.ForeignKey("pengguna.id"))
-    course_id = db.Column(db.String, db.ForeignKey("course.id"))
-    status = db.Column(db.String, nullable=False)
-
-# tabel pre-requsite
-class Prequisite(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    course_id = db.Column(db.String, db.ForeignKey("course.id"))
-    prequisite_id = db.Column(db.String, db.ForeignKey("course.id"))
+    
 
 #endpoint REGISTRASI & UPDATE PENGGUNA
 @app.route('/user/regis', methods=['POST'])
@@ -68,6 +79,7 @@ def create_newuser():
     db.session.commit()
     return {"message": "Hore! Anda berhasil mendaftar."}
 
+
 @app.route('/user/update/<id>', methods=['PUT'])
 def create_updateuser(id):
     user = Pengguna.query.filter_by(id=id).first_or_404()
@@ -80,6 +92,7 @@ def create_updateuser(id):
     db.session.add(user)
     db.session.commit()
     return {"message": "Hore! Anda berhasil mengupdate data."}
+
 
 #ENDPOINT COURSE Add & Update
 @app.route('/course/add', methods=['POST'])
@@ -95,6 +108,7 @@ def create_course():
     db.session.commit()
     return {"message": "Hore! Anda berhasil menambahkan course."}
 
+
 @app.route('/course/update/<id>', methods=['PUT'])
 def update_course(id):
     course = Course.query.filter_by(id=id).first_or_404()
@@ -108,31 +122,52 @@ def update_course(id):
     db.session.commit()
     return {"message": "Hore! Anda berhasil mengupdate data."}
 
+
 #Endpoint Enroll course
 @app.route('/course/enroll/<id>', methods=['POST'])
 def enroll_course(id):
     user = login()
-    print(user.id)
     if user.role == 'Student':
-        add_enroll = Coursedata(user_id = user.id, course_id = id, status = "in progress")
-             
-        db.session.add(add_enroll)
-        db.session.commit()
-        return {"message": "Hore! Anda berhasil."}
+        enrollment_count = db.session.query(Coursedata).filter(Coursedata.user_id == user.id).filter(Coursedata.status.in_(['in progress', 'dropout'])).count()
+
+        if enrollment_count >= 5:
+            return {"message": "Enrollment gagal. Course yang boleh diambil adalah maksimal 5"}
+
+        prerequisite = db.session.query(Prequisite).filter(Prequisite.course_id == id).first()
+        
+        if prerequisite is None:
+            add_enroll = Coursedata(user_id=user.id, course_id=id, status='in progress')
+            db.session.add(add_enroll)
+            db.session.commit()
+            return {"message": "Success"}
+        else:
+            prerequisite_completed = db.session.query(Coursedata).filter(Coursedata.user_id == user.id).filter(Coursedata.course_id == prerequisite.course_id).filter(Coursedata.status == 'completed').first()
+
+            if prerequisite_completed:
+                add_enroll = Coursedata(user_id=user.id, course_id=id, status='in progress')
+                db.session.add(add_enroll)
+                db.session.commit()
+                return {"message": "Success"}
+            else:
+                return {"message": "Enrollment gagal. Belum lulus course prerequisite."}
+    else:
+        return {"message": "Hanya boleh dilakukan oleh student."}
+
 
 #Endpoint enroll complete
 @app.route('/course/enroll/<id>', methods=['PUT'])
 def complete_course(id):
     user = login()
     data = request.get_json()
-    course = Coursedata.query.filter_by(user_id=id).first_or_404()
+    course = Coursedata.query.filter_by(id=id).first_or_404()
     if user.role == 'Admin':
         course.status = data.get("status")
         
         db.session.add(course)
         db.session.commit()
         return {"message": "Hore! Anda selesai."}
-    
+
+
 #Endpoint delete from course
 @app.route('/course/enroll/<id>', methods=['DELETE'])
 def delete_enroll(id):
@@ -142,6 +177,7 @@ def delete_enroll(id):
         db.session.delete(data)
         db.session.commit()
     return {"message": "Hore! Data selesai dihapus."}
+
 
 #Endpoint search course by name
 @app.route('/search/course/<name>', methods=['GET'])
@@ -157,6 +193,7 @@ def search_course(name):
     
     return jsonify(result)
 
+
 #Endpoint search course by deskripsi
 @app.route('/search/course/deskripsi/<description>', methods=['GET'])
 def search_course_description(description):
@@ -171,10 +208,7 @@ def search_course_description(description):
     
     return jsonify(result)
 
+
 if __name__ == '__main__':
     app.run(debug=True)
-
-with app.app_context(): 
-    db.create_all()
-    db.session.commit()
     
