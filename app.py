@@ -39,6 +39,15 @@ class Prequisite(db.Model):
     course_id = db.Column(db.String, db.ForeignKey("course.id"))
     prequisite_id = db.Column(db.String, db.ForeignKey("course.id"))
 
+class Viewtopcourse(db.Model):
+    __tablename__ = "viewtopcourse"
+    jumlah = db.Column(db.Integer)
+    nama = db.Column(db.String, primary_key=True)
+    
+class Viewtopstudent(db.Model):
+    __tablename__ = "viewtopstudent"
+    jumlah = db.Column(db.Integer)
+    nama = db.Column(db.String, primary_key=True)
 
 with app.app_context(): 
     db.create_all()
@@ -136,7 +145,7 @@ def enroll_course(id):
 
         get_course = db.session.query(Course).filter(Course.id == id).first()
         if get_course is None :
-            return 'course not available!'
+            return {"message": "course not available!"}
         else:
             if db.session.query(Prequisite).filter(Prequisite.course_id == id).first() != None:
                 preqid = db.session.query(Prequisite).filter(Prequisite.course_id == id).first().prequisite_id
@@ -146,16 +155,16 @@ def enroll_course(id):
                         add_enroll = Coursedata(user_id=user.id, course_id=id, status='in progress')
                         db.session.add(add_enroll)
                         db.session.commit()
-                        return 'success enroll'
+                        return {"message": "success enroll"}
                     else :
-                        return 'fail enroll because not completed yet'
+                        return {"message": "fail enroll because not completed yet"}
                 else:
-                    return 'Maaf gagal, kamu belum enroll sama sekali si prequisitenya!!'
+                    return {"message": "Maaf gagal, kamu belum enroll sama sekali si prequisitenya!!"}
             else :
                     add_enroll = Coursedata(user_id=user.id, course_id=id, status='in progress')
                     db.session.add(add_enroll)
                     db.session.commit()
-                    return 'success enroll'
+                    return {"message": "success enroll"}
        
     else:
         return {"message": "Hanya boleh dilakukan oleh student."}
@@ -179,7 +188,7 @@ def complete_course(id):
 @app.route('/course/list/<id>', methods=['GET'])
 def list_enrolled_users(id):
     course = Coursedata.query.filter_by(id=id).all()
-    
+
     response = [
         {
             "id" : c.id,
@@ -228,11 +237,34 @@ def search_course_description(description):
     result = []
     for course in courses:
         result.append({'id': course.id, 'nama': course.nama, 'deskripsi': course.deskripsi})
-    
+
     return jsonify(result)
 
 
+#endpoint reporting Get top 5 course (most enrolled)
+@app.route('/top5course')
+def view_report_course():
+    course = Viewtopcourse.query.all()
+    
+    result = []
+    rank = 0
+    for i in course:
+        rank +=1
+        result.append({'rank': rank, 'nama' : i.nama, 'jumlah siswa' : i.jumlah})
+    return jsonify(result)
 
+
+#endpoint reporting Get top 5 student (most enrolled)
+@app.route('/top5student')
+def view_report_student():
+    student = Viewtopstudent.query.all()
+    
+    result = []
+    rank = 0
+    for i in student:
+        rank +=1
+        result.append({'rank': rank, 'nama' : i.nama, 'jumlah completed' : i.jumlah})
+    return jsonify(result)
 
 
 if __name__ == '__main__':
