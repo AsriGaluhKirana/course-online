@@ -84,6 +84,20 @@ def create_newuser():
         password = data.get('password'),
         role = data.get('role')
     )
+    
+    conditions = db.or_(
+        Pengguna.id == new_user.id,
+        Pengguna.nama == new_user.nama
+    )
+    
+    existing_user = db.session.query(Pengguna).filter(conditions).first()
+    
+    if existing_user:
+        return {
+            "status": "error",
+            "detail": "id atau nama sudah ada!!"
+        }
+    
     db.session.add(new_user)
     db.session.commit()
     return {"message": "Hore! Anda berhasil mendaftar."}
@@ -113,6 +127,20 @@ def create_course():
         deskripsi = data.get('deskripsi'),
         kategori = data.get('kategori')
     )
+    
+    conditions = db.or_(
+        Course.id == new_course.id,
+        Course.nama == new_course.nama
+    )
+    
+    existing_course = db.session.query(Course).filter(conditions).first()
+    
+    if existing_course:
+        return {
+            "status": "error",
+            "detail": "id atau nama course sudah ada!!"
+        }
+    
     db.session.add(new_course)
     db.session.commit()
     return {"message": "Hore! Anda berhasil menambahkan course."}
