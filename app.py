@@ -1,9 +1,11 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+cors = CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI']='postgresql://postgres:1@localhost:5432/courseonline'
 db = SQLAlchemy(app)
 
@@ -74,7 +76,7 @@ def login():
         return 'Password salah!'
     
 
-#endpoint REGISTRASI & UPDATE PENGGUNA
+#endpoint REGISTRASI & UPDATE PENGGUNA (penambahan auth) hanya bisa update diri sendiri
 @app.route('/user/regis', methods=['POST'])
 def create_newuser():
     data=request.get_json()
@@ -117,7 +119,7 @@ def create_updateuser(id):
     return {"message": "Hore! Anda berhasil mengupdate data."}
 
 
-#ENDPOINT COURSE Add & Update
+#ENDPOINT COURSE Add & Update (penambahan auth) hanya bisa update diri sendiri
 @app.route('/course/add', methods=['POST'])
 def create_course():
     data=request.get_json()
@@ -160,7 +162,7 @@ def update_course(id):
     return {"message": "Hore! Anda berhasil mengupdate data."}
 
 
-#Endpoint Enroll course
+#Endpoint Enroll course (tidak boleh ambil course yg sama 2x)
 @app.route('/course/enroll/<id>', methods=['POST'])
 def enroll_course(id):
     user = login()
@@ -215,7 +217,7 @@ def complete_course(id):
 #Endpoint Get list users enrolled to course
 @app.route('/course/list/<id>', methods=['GET'])
 def list_enrolled_users(id):
-    course = Coursedata.query.filter_by(id=id).all()
+    course = Coursedata.query.filter_by(course_id=id).all()
 
     response = [
         {
@@ -224,7 +226,7 @@ def list_enrolled_users(id):
             "course_id" : c.course_id,
             "status" : c.status
         } for c in course
-    ]
+    ] #penambahan nama user/student
     return {"message": "success.", "data" : response}
 
 
@@ -278,7 +280,7 @@ def view_report_course():
     rank = 0
     for i in course:
         rank +=1
-        result.append({'rank': rank, 'nama' : i.nama, 'jumlah siswa' : i.jumlah})
+        result.append({'rank': rank, 'nama' : i.nama, 'jumlah_siswa' : i.jumlah})
     return jsonify(result)
 
 
@@ -291,7 +293,7 @@ def view_report_student():
     rank = 0
     for i in student:
         rank +=1
-        result.append({'rank': rank, 'nama' : i.nama, 'jumlah completed' : i.jumlah})
+        result.append({'rank': rank, 'nama' : i.nama, 'jumlah_completed' : i.jumlah})
     return jsonify(result)
 
 
