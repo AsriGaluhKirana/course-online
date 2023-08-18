@@ -55,7 +55,7 @@ with app.app_context():
     db.create_all()
     db.session.commit()
 
-
+@app.post('/login')
 def login():
     username = request.authorization.get("username")
     password = request.authorization.get("password")
@@ -69,9 +69,9 @@ def login():
         }
     if user.password == password:
         if user.role == 'Admin':
-            return user
+            return {"id": user.id, "nama": user.nama}, 200 
         elif user.role == 'Student':
-            return user
+            return {"id": user.id, "nama": user.nama}, 200 
     else:
         return 'Password salah!'
     
@@ -161,6 +161,16 @@ def update_course(id):
     db.session.commit()
     return {"message": "Hore! Anda berhasil mengupdate data."}
 
+#GET ALL COURSES
+@app.route('/course', methods=['GET'])
+def get_course():
+    all_courses = Course.query.all()
+    
+    result = []
+    for course in all_courses:
+        result.append({'id': course.id, 'nama': course.nama, 'deskripsi': course.deskripsi})
+    
+    return jsonify(result)
 
 #Endpoint Enroll course (tidak boleh ambil course yg sama 2x)
 @app.route('/course/enroll/<id>', methods=['POST'])
